@@ -71,59 +71,93 @@ Vagrant.configure("2") do |config|
   # Enable provisioning with a shell script. Additional provisioners such as
   # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
   # documentation for more information about their specific syntax and use.
-  config.vm.provision "fix-no-tty", type: "shell", inline: <<-SHELL
-    umask 0027
-    echo "umask 0027" >> /etc/profile
-    useradd -r -s /opt/jailkit-2.19/sbin/jk_lsh deploy
-    mkdir -p /home/deploy/images
-    cp -R /vagrant/docker /home/deploy
-    cp -R /vagrant/setup /home/deploy
-    cat /vagrant/deploy/sudoers >> /etc/sudoers
-    rm -f /vagrant/deploy/deploy.ssh*
-    ssh-keygen -N "" -f /vagrant/deploy/deploy.ssh
-    mkdir -p /home/deploy/.ssh
-    cp /vagrant/deploy/deploy.ssh.pub /home/deploy/.ssh/authorized_keys
-    chmod 550 /home/deploy/.ssh
-    chmod 440 /home/deploy/.ssh/authorized_keys
-    chown -R root:deploy /home/deploy
-    apt-get update
-    apt-get install -y \
-      apt-transport-https ca-certificates curl nodejs \
-      software-properties-common software-properties-common python-software-properties
-    apt-key fingerprint 0EBFCD88
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-    sudo add-apt-repository \
-      "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-    apt-get update
-    apt-get install -y docker-ce docker-compose
-    cd /vagrant/build_jk
-    ./run_build.sh
-    tar -xvjf /vagrant/build_jk/jailkit-2.19.tar.bz2 -C /
-    cp /vagrant/deploy/jk_lsh.ini /opt/jailkit-2.19/etc/jailkit/
-    mkdir /home/pg_data
+  config.vm.provision "fix-no-tty", run: "always", type: "shell", inline: <<-SHELL
+    # base user and sec hasn't been setup
+    if [ ! -f /home/deploy/.ssh/authorized_keys ] ; then
+      umask 0027
+      echo "umask 0027" >> /etc/profile
+      useradd -r -s /opt/jailkit-2.19/sbin/jk_lsh deploy
+      mkdir -p /home/deploy/images
+      cp -R /vagrant/docker /home/deploy
+      cp -R /vagrant/setup /home/deploy
+      cat /vagrant/deploy/sudoers >> /etc/sudoers
+      rm -f /vagrant/deploy/deploy.ssh*
+      ssh-keygen -N "" -f /vagrant/deploy/deploy.ssh
+      mkdir -p /home/deploy/.ssh
+      cp /vagrant/deploy/deploy.ssh.pub /home/deploy/.ssh/authorized_keys
+      chmod 550 /home/deploy/.ssh
+      chmod 440 /home/deploy/.ssh/authorized_keys
+      chown -R root:deploy /home/deploy
+    fi
 
-    git clone https://github.com/ccyphers/docker_kong /tmp/docker_kong
-    cd /tmp/docker_kong
-    docker build -t ccyphers/kong:latest .
+    # if docker hasn't been installed
+    which docker-compose
+    if [ "$?" = "1" ] ; then
+
+      apt-get update
+      apt-get install -y \
+        apt-transport-https ca-certificates curl nodejs \
+        software-properties-common software-properties-common python-software-properties
+      apt-key fingerprint 0EBFCD88
+      curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+      sudo add-apt-repository \
+        "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+      apt-get update
+      apt-get install -y docker-ce docker-compose
+    fi
+
+    # if jailkit hasn't been configured
+    if [ ! -f /opt/jailkit-2.19/etc/jailkit/jk_lsh.ini ] ; then
+      cd /vagrant/build_jk
+      ./run_build.sh
+      tar -xvjf /vagrant/build_jk/jailkit-2.19.tar.bz2 -C /
+      cp /vagrant/deploy/jk_lsh.ini /opt/jailkit-2.19/etc/jailkit/
+      mkdir /home/pg_data
+
+      # do not keep dev tools laying around
+      docker rmi -f build_jk_tools
+    fi
+
+    # if kong hasn't been installed
+    n=$(docker images ccyphers/kong | wc -l | sed -e 's/ //g')
+    if [ "$n" = "1" ] ; then
+      git clone https://github.com/ccyphers/docker_kong /tmp/docker_kong
+      cd /tmp/docker_kong
+      docker build -t ccyphers/kong:latest .
+    fi
+
     docker-compose -f /home/deploy/docker/services/compose.yml up -d
     echo "Waiting on postgres"
-    sleep 20
+    sleep 30
     docker exec services_postgres_1 createdb -U postgres -h localhost kong
     docker exec services_postgres_1 createuser -U postgres -h localhost kong
     docker exec services_postgres_1 createdb -U postgres -h localhost auth_prod
     docker-compose -f /home/deploy/docker/services/compose.yml up -d
-    ufw allow 8000/tcp
-    cd /tmp
-    wget https://nodejs.org/dist/v8.2.1/node-v8.2.1-linux-x64.tar.xz
-    unxz node-v8.2.1-linux-x64.tar.xz
-    tar -xvf node-v8.2.1-linux-x64.tar -C /opt
-    echo "export PATH=/opt/node-v8.2.1-linux-x64/bin:$PATH" >> /etc/profile
+
+    if [ ! -f /opt/node-v8.2.1-linux-x64/bin/node ] ; then
+      cd /tmp
+      wget https://nodejs.org/dist/v8.2.1/node-v8.2.1-linux-x64.tar.xz
+      unxz node-v8.2.1-linux-x64.tar.xz
+      tar -xf node-v8.2.1-linux-x64.tar -C /opt
+      chown -R root:root /opt/node-v8.2.1-linux-x64
+      echo "export PATH=/opt/node-v8.2.1-linux-x64/bin:$PATH" >> /etc/profile
+    fi
+
     export PATH=/opt/node-v8.2.1-linux-x64/bin:$PATH
-    cd /vagrant/kong_setup
+    mkdir -p /root/.npm/_cacache/tmp
+
+    cp -R /vagrant/kong_setup /tmp
+    cd /tmp/kong_setup
     rm -rf node_modules
-    npm install
+    chown -R ubuntu /tmp/kong_setup
+    su ubuntu -c "export PATH=/opt/node-v8.2.1-linux-x64/bin:$PATH;npm install"
+
     node index.js
+    cd /root
+    rm -rf /tmp/kong_setup
+
     #sed -i -e "s/exit 0/docker-compose -f \/home\/deploy\/docker\/services\/compose.yml up -d/g" /etc/rc.local
 
   SHELL
+
 end

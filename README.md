@@ -138,29 +138,40 @@ Assuming that your workstation has docker for building the required images to de
 
 After you have vagrant up:
 
-    cd auth
+  * check that the services are running:
 
-    # seed DB - if not previously executed
-    ./vg_db_setup.sh
+        cd <project root>/kiss_arch
+        ssh -p 2222 -i .vagrant/machines/default/virtualbox/private_key ubuntu@localhost sudo docker ps
 
-    ./build.sh --> will output something like "Time to deploy: kiss_arch_auth_20170809095303.tar"
-    ./deploy.sh kiss_arch_auth_20170809095303.tar
+  * if you don't see services_kong_1 or services_postgres_1 running:
 
-    cd ../google
-    run build.sh and deploy.sh just like auth project
+        cd <project root>/kiss_arch
+        ssh -i ./deploy/deploy.ssh deploy@192.168.254.2 sudo /home/deploy/docker/docker_mgmt.sh --start-core-services
+
+  * build and deploy
+
+        cd <project root>/kiss_arch/auth
+        ./vg_db_setup.sh <---- only run first time after provision
+
+        ./build.sh --> will output something like "Time to deploy: kiss_arch_auth_20170809095303.tar"
+        ./deploy.sh kiss_arch_auth_20170809095303.tar
+
+        cd <project root>/kiss_arch/google
+        run build.sh and deploy.sh just like auth project
 
 
-Test:
+  * Test
 
-      curl http://localhost:8010/api/search
-      {"message":"Unauthorized"}
+          curl http://localhost:8010/api/search
+          {"message":"Unauthorized"}
 
-      Should require JWT:
+          Should require JWT:
 
-      token=$(curl -X POST -d username=demo -d password=somepassword localhost:8010/api/login 2>/dev/null)
-      curl -H 'Authorization: Bearer $token' --url http://localhost:8010/api/search
+          curl -X POST -d username=demo -d password=somepassword localhost:8010/api/login
 
-      Should now get search results      
+          curl -H 'Authorization: Bearer PLACE_TOKEN_FROM_/api/login_HERE' --url http://localhost:8010/api/search
+
+          Should now get search results      
 
 ## Kong
 

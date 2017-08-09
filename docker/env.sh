@@ -144,6 +144,10 @@ process_arg() {
         COMMANDS[$NUM_COMMANDS]="docker-compose -f /home/deploy/docker/kiss_arch/kissarch_google-compose.yml up -d"
         let NUM_COMMANDS=$NUM_COMMANDS+1
       ;;
+      "--start-core-services")
+        COMMANDS[$NUM_COMMANDS]="docker-compose -f /home/deploy/docker/services/compose.yml up -d"
+        let NUM_COMMANDS=$NUM_COMMANDS+1
+      ;;
       "--stop-all")
         COMMANDS[$NUM_COMMANDS]="docker-compose -f /home/deploy/docker/services/compose.yml down"
         let NUM_COMMANDS=$NUM_COMMANDS+1
