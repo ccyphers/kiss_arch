@@ -22,7 +22,7 @@ First and foremost, there are lot of powerful and full-fledged systems out there
 even complex and high load applications I'd like to review some practices you can use, that will take less time to implement and get the team up to 
 speed on. However, there's nothing outlined below that can't easily be re-used and repurposed for things such as kubernetes.
 
-For the simplicity sakes, a push to production model is going to be utilized as all it requires is ssh access and traditional shell tools. This 
+For simplicity sakes, a push to production model is going to be utilized as all it requires is ssh access and traditional shell tools. This 
 yields in easy setup without a ton of additional requirements you would have with things such as puppet or chef. Feel free to use alternative tools,
 as they have great value, but you must get started somewhere and by using alternative models you can migrate components over time if 
 desired. At the same time, the push model can be easily scaled to a magnitude of docker host systems with ease and configuration management and 
@@ -34,7 +34,7 @@ If you are going to use the push model, don't take shortcuts from what is outlin
 massive amounts users in the docker group, where they have the full power to do anything with docker as they please. Only place users on a need to access basis 
 in the docker group. First and foremost, create a deploy user using a restricted shell, for this guide jk_lsh is utilized.
 
-Install Jailkit on all Docker host(no OS X and Windows are docker hosts they are docker clients)
+Install Jailkit on all Docker host(no OS X and Windows are docker not hosts they are docker clients)
 
     https://olivier.sessink.nl/jailkit/
 
@@ -87,7 +87,6 @@ When all is said and done check perms:
     drwxr-x--- 2 root deploy 4096 Aug  9 01:12 /home/deploy/images
     dr-xr-x--- 2 root deploy 4096 Aug  9 00:57 /home/deploy/.ssh
     
-Notice, that the deploy user can't do anything besides home/deploy/docker/docker_mgmt.sh
 
 ### Further restricting the deploy user's access 
    
