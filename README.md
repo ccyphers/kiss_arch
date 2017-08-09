@@ -18,15 +18,19 @@ is left up to the reader.
 
 ## Smooth transition: Dev to Prod
 
-First and foremost, there are lot of powerful and full-fledged systems out there, such as kubernetes, however for 95%+ of the applications out there,
-even complex and high load applications I'd like to review some practices you can use, that will take less time to implement and get the team up to
-speed on. However, there's nothing outlined below that can't easily be re-used and repurposed for things such as kubernetes.
+In order to keep your developers happy there should be an easy and transparent means to develop applications ensuring a high level, if not an absolute level of certainty that things running in “development” work exactly the same as “production”. Given the predicate, development is production, you can move more quickly from code in development to production.
 
-For simplicity sakes, a push to production model is going to be utilized as all it requires is ssh access and traditional shell tools. This
-yields in easy setup without a ton of additional requirements you would have with things such as puppet or chef. Feel free to use alternative tools,
-as they have great value, but you must get started somewhere and by using alternative models you can migrate components over time if
-desired. At the same time, the push model can be easily scaled to a magnitude of docker host systems with ease of configuration management and
-deploys covered by tools like Capistrano. In the orchestration piece, you would simply execute the same scripts that are outlined below.
+First and foremost, there are lot of powerful and full-fledged systems out there, such as kubernetes, however for 95%+
+of the applications out there, even complex and high load applications I'd like to review some practices you can use,
+that will take less time to implement and get the team up to speed on. However, there's nothing outlined below that can't easily be re-used and repurposed for things such as kubernetes.
+
+For simplicity sakes, a push to production model is going to be utilized as all it requires is ssh access and traditional shell tools. This yields in easy setup without a ton of additional requirements you would have with things such as puppet or chef. Feel free to use alternative tools, as they have great value, but you must get started somewhere and by using alternative models you can migrate components over time if desired. At the same time, the push model can be easily scaled
+to a magnitude of docker host systems with ease of configuration management and deploys covered by tools like Capistrano.
+In the orchestration piece, you would simply execute the same scripts that are outlined below.
+
+There are very few things that can differ between environments a code base is running on. Some of the most common items include things such as users, passwords, connection strings, and filesystem paths. Excluding passwords, it’s easy to keep all the environments the same. Starting with connection strings, use a service name, which remains constant between all environments. For development, one would simply edit /etc/hosts so that the service names resolves to 127.0.0.1. For other environments, you would have different DNS servers that resolved the same service name to different IP(s), or some other service discovery based on the environment(kong for this example). If your application must have direct filesystem access, use the same “path” between all environments. If the path needs to slightly alter between environments, use symlinks. For development, it’s quick and easy to setup the symlinks and for production, you would bake this into deploy scripts.
+
+The key to take away, is to keep as many things as possible constant, in the application code and configuration files, so that you have a contract that holds true for all. For any items which you can’t keep constant, your application will read the values from a config file as most of you currently use today. The configuration files would be tightly managed by resources who need to access/modify them and there would be deploy scripts that update the environment specific configuration as needed Once the deploy scripts have been tested there should be a high degree of comfort from going from development to production very quickly with little review/overhead.
 
 
 ### A word about security
@@ -156,14 +160,14 @@ Test:
       token=$(curl -X POST -d username=demo -d password=somepassword localhost:8010/api/login 2>/dev/null)
       curl -H 'Authorization: Bearer $token' --url http://localhost:8010/api/search
 
-      Should now get search results
+      Should now get search results      
 
 ## Kong
 
-I will discuss this in more details later. Just note, you can easily run a kong instance on OS X and have all your development
-go through the API Gateway, taking advantage of a single point where all traffic is routed to specific services. Some of what this buys you is that each service
-doesn't have to have knowledge of other services. Instead each service only needs to know about how to get to KONG, simplifying the spaghetti
-code you often see in micro-services.
+I will discuss this in more details later. Just note, you can easily run a kong instance on OS X and have all your
+development go through the API Gateway, taking advantage of a single point where all traffic is routed to the required service based on the request path. This way each service doesn't have to have knowledge of the other services, all they need to know is the kong host and api path for a given service. Most out there working in a micro-services architecture,
+probably have seen a lot of spaghetti code to keep track of all the different host associated with each service. Yes the
+host for a given service can be included in a configuration file, but when you have more than a couple of services,
+you can see that it can become unwieldly to maintain across all environments.
 
-For now you might want to look at kong_setup/index.js just to get an idea as to some of the power to the restful interface to defining your API
-and some common practices you can use with plugins so that your services don't have to have any concern with implementing common/shared types of things.
+For now, you might want to look at kong_setup/index.js just to get an idea how easy it is to setup your API routes due to the nice REST admin interface kong provides. Not only will this help reduce the complexity of service to service interactions, but utilizing the plugins your services don’t have to implement shared responsibilities, such as auth, cors, rate limiting, black-listing, etc.
