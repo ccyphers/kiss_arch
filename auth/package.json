@@ -1,0 +1,29 @@
+{
+  "name": "kiss_arch_example_",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Cliff Cyphers",
+  "license": "GPLv3",
+  "dependencies": {
+    "body-parser": "^1.17.2",
+    "bookshelf": "^0.10.4",
+    "bookshelf-secure-password": "^3.0.1",
+    "express": "^4.15.3",
+    "knex": "^0.13.0",
+    "lodash": "^4.17.4",
+    "pg": "^7.0.2",
+    "tokyo_ape": "git+https://github.com/ccyphers/tokyo_ape.git"
+  },
+  "devDependencies": {
+    "eslint": "^4.3.0",
+    "eslint-config-airbnb": "^15.1.0",
+    "eslint-config-airbnb-base": "^11.3.1",
+    "eslint-plugin-import": "^2.7.0",
+    "eslint-plugin-jsx-a11y": "^5.1.1",
+    "eslint-plugin-react": "^7.1.0"
+  }
+}

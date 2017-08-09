@@ -1,0 +1,14 @@
+version: '2'
+services:
+  auth:
+    image: kiss_arch/auth:latest
+    user: app
+    environment:
+    - NODE_ENV=production
+    external_links:
+      - services_postgres_1
+      - services_kong_1
+networks:
+  default:
+    external:
+      name: services_net1

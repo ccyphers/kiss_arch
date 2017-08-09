@@ -1,0 +1,16 @@
+version: '2'
+services:
+  auth:
+    image: ccyphers/birdy_auth:latest
+    user: app
+    ports:
+    - "127.0.0.1:9000:9000"
+    environment:
+    - NODE_ENV=production
+    external_links:
+      - services_postgres_1
+      - services_kong_1
+networks:
+  default:
+    external:
+      name: services_net1

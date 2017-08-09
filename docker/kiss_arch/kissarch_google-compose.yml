@@ -1,0 +1,11 @@
+version: '2'
+services:
+  google:
+    image: kiss_arch/google:latest
+    user: app
+    external_links:
+      - services_postgres_1
+networks:
+  default:
+    external:
+      name: services_net1

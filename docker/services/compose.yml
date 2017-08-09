@@ -1,0 +1,31 @@
+version: '2'
+services:
+  postgres:
+    image: postgres
+    networks:
+      - net1
+    environment:
+    - PGDATA=/home/pg_data
+    volumes:
+        - /share/pg_data:/home/pg_data
+  kong:
+    image: ccyphers/kong:latest
+    user: kong
+    networks:
+      - net1
+    depends_on:
+    - "postgres"
+    entrypoint:
+      - /usr/local/bin/kong
+      - start
+    ports:
+    - "8000:8000"
+    - "127.0.0.1:8001:8001"
+    environment:
+    - KONG_PG_HOST=services_postgres_1
+    - KONG_DATABASE=postgres
+    - POSTGRES_USER=kong
+    - POSTGRES_DB=kong
+    - KONG_NGINX_DAEMON=off
+networks:
+  net1:
