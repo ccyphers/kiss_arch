@@ -118,9 +118,11 @@ Vagrant.configure("2") do |config|
     unxz node-v8.2.1-linux-x64.tar.xz
     tar -xvf node-v8.2.1-linux-x64.tar -C /opt
     echo "export PATH=/opt/node-v8.2.1-linux-x64/bin:$PATH" >> /etc/profile
+    export PATH=/opt/node-v8.2.1-linux-x64/bin:$PATH
     cd /vagrant/kong_setup
-
-    /opt/node-v8.2.1-linux-x64/bin/node index.js
+    rm -rf node_modules
+    npm install
+    node index.js
     #sed -i -e "s/exit 0/docker-compose -f \/home\/deploy\/docker\/services\/compose.yml up -d/g" /etc/rc.local
 
   SHELL
